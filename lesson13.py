@@ -20,6 +20,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker, declared_attr, Session
 from sqlalchemy.sql.functions import count
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from pydantic import BaseModel, PositiveInt, Field, PostgresDsn, ConfigDict
 from pydantic_settings import BaseSettings
@@ -48,6 +49,7 @@ class Base(DeclarativeBase):
 
     engine = create_engine(url=SETTINGS.DATABASE_URL.unicode_string())
     session = sessionmaker(bind=engine)
+    async_engine = create_async_engine(url='postgresql+asyncpg://')
 
     @declared_attr
     def __tablename__(cls):
