@@ -5,6 +5,10 @@ from typing import Type, List, TypeVar
 from pydantic import BaseModel, Field, PositiveInt
 from pydantic.types import Decimal
 from pydantic_core import ValidationError
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+
+from lesson13 import Category
 
 Schema = TypeVar('Schema', bound=BaseModel)
 
@@ -21,6 +25,7 @@ class Parser(ABC):
     @abstractmethod
     def dump(cls, objs: List[Schema], file: TextIOWrapper, delimiter: str) -> None:
         ...
+
 
 
 class ProductDetail(BaseModel):
@@ -54,6 +59,26 @@ class ProductParser(Parser):
                 pass
         return data
 
+
+def load_to_db(file, delimiter):
+    objs = ProductParser.parse(file=file, delimiter=delimiter)
+    objs = [Category(**obj.model_dump()) for obj in objs]
+    with Category.session() as session:
+        session.add_all(objs)
+        try:
+            session.commit()
+        except IntegrityError:
+            pass
+
+
+def dump_from_db(file, delimiter):
+    with Category.session() as session:
+        objs = session.scalars(select(Category))
+        data = []
+        for obj in objs:
+            data.append(ProductDetail.model_validate(obj, from_attributes=True))
+
+        ProductParser.dump(data, file, delimiter)
 
 # a = 'abcd'
 # b = 'efgh'

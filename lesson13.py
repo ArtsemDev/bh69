@@ -44,6 +44,11 @@ class Settings(BaseSettings):
 SETTINGS = Settings()
 
 
+class CategorySchema(BaseModel):
+    id: PositiveInt
+    name: str = Field(min_length=4, max_length=64)
+
+
 class Base(DeclarativeBase):
     id = Column(INT, primary_key=True)
 
@@ -54,6 +59,18 @@ class Base(DeclarativeBase):
     @declared_attr
     def __tablename__(cls):
         return ''.join(f'_{i.lower()}' if i.isupper() else i for i in cls.__name__).strip('_')
+
+    def save(self, update: bool = False):
+        with self.session() as session:
+            if not update:
+                session.add(self)
+            session.commit()
+            session.refresh(self)
+
+    def delete(self):
+        with self.session() as session:
+            session.delete(self)
+            session.commit()
 
     def from_attributes(self, obj: Any):
         for k, v in obj.__dict__.items():
